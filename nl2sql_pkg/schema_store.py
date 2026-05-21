@@ -60,7 +60,7 @@ class VectorStore:
             table_metas.append({
                 "table_name": schema.table_name,
                 "comment": schema.table_comment,
-                "schema_json": json.dumps(schema.to_dict(), ensure_ascii=False),
+                "schema_json": json.dumps(schema.to_dict(), ensure_ascii=False, default=str),
             })
         table_embeddings = self.embedder.batch_get_embeddings(table_docs, dimension=1024)
         # ChromaDB upsert 支持批量，按 batch_size 分块避免单次过大
@@ -126,7 +126,7 @@ class VectorStore:
         # ── A. 向量检索 ───────────────────────────────────────
         n_vector = min(max(top_k * 3, 15), total)
         vector_results = self.col_tables.query(
-            query_embeddings=[self.embedder.get_embedding(query, text_type="query")],
+            query_embeddings=[self.embedder.get_embedding(query)],
             n_results=n_vector,
             include=["metadatas", "distances"],
         )
@@ -193,7 +193,7 @@ class VectorStore:
         if total == 0:
             return []
         results = self.col_columns.query(
-            query_embeddings=[self.embedder.get_embedding(query, text_type="query")],
+            query_embeddings=[self.embedder.get_embedding(query)],
             n_results=min(top_k, total),
         )
         return results["metadatas"][0]

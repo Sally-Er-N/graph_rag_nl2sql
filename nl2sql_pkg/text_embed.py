@@ -21,14 +21,12 @@ class EmbeddingManager:
     def get_embedding(
         self,
         text: str,
-        dimension: int = 1024,
-        text_type: str = "query",
+        dimension: int = 1024
     ) -> List[float]:
         completion = self.client.embeddings.create(
             model=self.model,
             input=text,
-            dimension=dimension,
-            text_type=text_type,
+            dimensions=dimension
         )
         return completion.data[0].embedding
 
@@ -36,8 +34,7 @@ class EmbeddingManager:
         self,
         texts: List[str],
         dimension: int = 1024,
-        text_type: str = "document",
-        batch_size: int = 16,
+        batch_size: int = 16
     ) -> List[List[float]]:
         """返回与 texts 等长的 embedding 列表，失败批次逐条回退。"""
         embeddings: List[List[float]] = []
@@ -47,8 +44,7 @@ class EmbeddingManager:
                 completion = self.client.embeddings.create(
                     model=self.model,
                     input=batch,
-                    dimension=dimension,
-                    text_type=text_type,
+                    dimensions=dimension
                 )
                 for data in completion.data:
                     embeddings.append(data.embedding)
@@ -56,7 +52,7 @@ class EmbeddingManager:
                 print(f"批处理出错 (批次 {i // batch_size + 1}): {e}")
                 for text in batch:
                     try:
-                        embeddings.append(self.get_embedding(text, dimension, text_type))
+                        embeddings.append(self.get_embedding(text, dimension))
                     except Exception as e2:
                         print(f"处理文本失败: {text[:50]}... 错误: {e2}")
                         embeddings.append([0.0] * dimension)
@@ -85,7 +81,7 @@ if __name__ == "__main__":
     embedder = EmbeddingManager()
     doc_embeddings = embedder.batch_get_embeddings(text_list, dimension=1024)
     for q in query_texts:
-        q_emb = embedder.get_embedding(q, dimension=1024, text_type="query")
+        q_emb = embedder.get_embedding(q, dimension=1024)
         results = sorted(
             [{"text": t, "similarity": EmbeddingManager.cosine_similarity(q_emb, e)}
              for t, e in zip(text_list, doc_embeddings)],
